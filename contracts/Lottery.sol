@@ -27,6 +27,7 @@ struct Sale {
 contract Lottery is Ownable {
     mapping(bytes32 => Sale) public sales;
     mapping(uint256 => bytes32) public randomizerIdToSalesId;
+    uint256 public reserves; // stores the amount of ETH the contract holds AND owns
 
     event Participation(
         bytes32 indexed saleId,
@@ -52,6 +53,7 @@ contract Lottery is Ownable {
 
     constructor(address _randomizerAddress) {
         randomizer = IRandomizer(_randomizerAddress);
+        reserves = 0;
     }
 
     // function that allows the contract owner to create a new sale with the given parameters
@@ -174,6 +176,8 @@ contract Lottery is Ownable {
             sale.participantsArr[i] = winner;
             sale.participantsArr[winnerIndex] = iParticipant;
         }
+
+        reserves += sale.price * sale.supply;
     }
 
     // can't give back ETH to losers, so we just give them the token
@@ -269,15 +273,20 @@ contract Lottery is Ownable {
 
     // ----------- House Keeping Function for Admins ------------ //
     function sweep(uint256 amount) external onlyOwner {
+        require(reserves >= amount, "Insufficient reserves");
         bool success = payable(msg.sender).send(amount);
         require(success, "Failed to send sweep");
+        reserves -= amount;
     }
 
     function fundRandomizer(uint256 amount) external onlyOwner {
+        require(reserves >= amount, "Insufficient reserves");
         randomizer.clientDeposit{value: amount}(address(this));
+        reserves -= amount;
     }
 
     function withdrawRandomizer(uint256 amount) external onlyOwner {
         randomizer.clientWithdrawTo(address(this), amount);
+        reserves += amount;
     }
 }
