@@ -3,194 +3,281 @@ pragma solidity ^0.8.17;
 
 import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
 import {ERC721} from "solmate/src/tokens/ERC721.sol";
-import {Auth, Authority} from "solmate/src/auth/Auth.sol";
-import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IRandomizer} from "./IRandomizer.sol";
 
 struct Sale {
-    uint256 supply; // The number of winners to be selected in the lottery.
-    uint256 participantCount; // The current number of participants in the sale.
+    // static setting by admin
+    address markToken; // The address of the ERC721 token that participants must mark to participate in the sale.
+    address rewardToken; // The address of the ERC1155 token that will be distributed to winners.
+    uint256 rewardTokenId; // The ID of the ERC1155 token that will be distributed to winners.
+    uint256 supply; // The number of reward tokens to distribute in the sale; also == number of winners.
     uint256 price; // The price in wei that a participant must pay to participate.
-    uint256 endTime; // The Unix timestamp after which participants cannot participate.
-    address[] participants; // An array of addresses of participants in the sale.
-    mapping(uint256 => bool) stake; // A mapping of staked token IDs to track which tokens have been used for participation.
+    uint256 endTime; // The block.timestamp after which participants cannot participate.
+    // dynamic data during sale
+    address[] participantsArr; // An array of addresses of participants in the sale.
+    mapping(address => bool) participantsMap; // A mapping of participants to whether they have participated or not, so we can prevent someone from participating twice.
+    mapping(uint256 => bool) marks; // A mapping of marked token IDs to track which tokens have been used for participation.
+    // data after sale
+    uint256 randomizerId; // The ID of the randomizer request; used to prevent spamming randomizer requests.
+    address[] winners; // An array of winners of the sale.
+    mapping(address => bool) withdrawn; // A mapping of participants to whether they have withdrawn their deposit/reward or not.
 }
 
-contract Lottery is Auth, ReentrancyGuard {
-    ERC721 public immutable STAKE_TOKEN;
-    ERC1155 public immutable REWARD_TOKEN;
+contract Lottery is Ownable {
+    mapping(bytes32 => Sale) public sales;
+    mapping(uint256 => bytes32) public randomizerIdToSalesId;
 
-    mapping(uint256 => Sale) public sales;
-
-    event Participate(
+    event Participation(
+        bytes32 indexed saleId,
         address indexed participant,
-        uint256 rewardTokenId,
-        uint256 stakeTokenId,
-        uint256 price
+        uint256 markTokenId
     );
 
-    event Distribute(address[] winners, uint256 tokenId);
+    //todo: remove event Distribute(address[] winners, uint256 tokenId);
 
-    event SaleCreated(
-        uint256 indexed rewardTokenId,
+    event SaleCreation(
+        bytes32 indexed saleId,
+        address markToken,
+        address rewardToken,
+        uint256 rewardTokenId,
         uint256 supply,
         uint256 price,
         uint256 endTime
     );
 
+    event Withdrawal(bytes32 indexed saleId, address indexed participant);
+
     IRandomizer public randomizer;
 
-    constructor(
-        Authority _authority,
-        ERC721 _stakedToken,
-        ERC1155 _rewardToken,
-        address _randomizerAddress
-    ) Auth(address(0), _authority) {
-        stake = _stakedToken;
-        reward = _rewardToken;
+    constructor(address _randomizerAddress) {
         randomizer = IRandomizer(_randomizerAddress);
     }
 
-    function participate(uint256 _rewardTokenId, uint256 _stakeTokenId)
+    // function that allows the contract owner to create a new sale with the given parameters
+    function createSale(
+        address _markToken,
+        address _rewardToken,
+        uint256 _rewardTokenId,
+        uint256 _supply,
+        uint256 _price,
+        uint256 _endTime
+    ) external onlyOwner {
+        require(_supply > 0, "Sale supply must be greater than zero.");
+        require(
+            _endTime > block.timestamp,
+            "Sale end time must be in the future."
+        );
+
+        bytes32 saleId = keccak256(
+            abi.encodePacked(
+                _markToken,
+                _rewardToken,
+                _rewardTokenId,
+                _supply,
+                _price,
+                _endTime
+            )
+        );
+
+        Sale storage sale = sales[saleId];
+        require(sale.endTime == 0, "Sale already exists.");
+
+        sale.markToken = _markToken;
+        sale.rewardToken = _rewardToken;
+        sale.rewardTokenId = _rewardTokenId;
+        sale.supply = _supply;
+        sale.price = _price;
+        sale.endTime = _endTime;
+
+        emit SaleCreation(
+            saleId,
+            _markToken,
+            _rewardToken,
+            _rewardTokenId,
+            _supply,
+            _price,
+            _endTime
+        );
+    }
+
+    function participate(bytes32 saleId, uint256 _markTokenId)
         external
         payable
     {
-        Sale storage sale = sales[_rewardTokenId];
+        Sale storage sale = sales[saleId];
 
         require(sale.endTime != 0, "Sale does not exist.");
-        require(sale.endTime < block.timestamp, "Sale has ended.");
+
+        require(block.timestamp < sale.endTime, "Sale has ended.");
+
         require(
             sale.price == msg.value,
             "Incorrect deposit amount. Please provide the correct deposit amount."
         );
 
         require(
-            stake.ownerOf(_stakeTokenId) == msg.sender,
-            "You do not own the staked token."
+            !sale.participantsMap[msg.sender],
+            "You have already participated in this sale."
         );
-        require(
-            !sale.stake[_stakeTokenId],
-            "Staked token has already been used to participate in this sale."
-        );
-
-        sale.participantCount++;
-        sale.participants.push(msg.sender);
-        sale.stake[_stakeTokenId] = true;
-
-        emit Participate(msg.sender, _rewardTokenId, _stakeTokenId, msg.value);
-    }
-
-    // function that allows the contract owner to create a new sale with the given parameters
-    function createSale(
-        uint256 _rewardTokenId,
-        uint256 _supply,
-        uint256 _price,
-        uint256 _endTime
-    ) external requiresAuth {
-        require(_supply > 0, "Sale supply must be greater than zero.");
-        require(_price > 0, "Sale price must be greater than zero.");
-        require(
-            _endTime > block.timestamp,
-            "Sale end time must be in the future."
-        );
-
-        Sale storage sale = sales[_rewardTokenId];
-        require(sale.endTime == 0, "Sale already exists.");
-
-        sale.supply = _supply;
-        sale.price = _price;
-        sale.endTime = _endTime;
-
-        emit SaleCreated(_rewardTokenId, _supply, _price, _endTime);
-    }
-
-    // Selects random winners from a pool of participants who have staked their ERC721 token, distributes a reward token to the winners. Refunds the participants who did not win the lottery if a deposit was required.
-    function scheduleAirdrop(uint256 _rewardTokenId) external {
-        Sale storage sale = sales[_rewardTokenId];
-
-        uintt memory requestId = randomUintProvider.requestRandomUint(
-            this.executeAirdrop
-        );
-        // unit memory requestId = randomUintProvider.requestRandomUint(address(this), _rewardTokenId);
 
         require(
-            block.timestamp > sale.endTime,
-            "Airdrop period has not yet started."
+            ERC721(sale.markToken).ownerOf(_markTokenId) == msg.sender,
+            "You do not own the marked token."
         );
+        require(
+            !sale.marks[_markTokenId],
+            "Marked token has already been used to participate in this sale."
+        );
+
+        sale.participantsArr.push(msg.sender);
+        sale.participantsMap[msg.sender] = true;
+        sale.marks[_markTokenId] = true;
+
+        emit Participation(saleId, msg.sender, _markTokenId);
     }
 
-    function executeAirdrop(uint256 _rewardTokenId) external {
-        address[] memory distList = new address[](sale.supply);
+    // can be poked by anyone to start the end process of the lottery
+    function getRandomNumber(bytes32 saleId) external {
+        Sale storage sale = sales[saleId];
+        require(sale.endTime != 0, "Sale does not exist.");
+        require(block.timestamp >= sale.endTime, "Sale has not ended.");
+        require(sale.randomizerId == 0, "Already requested random nubmer"); // so we can only execute once per sale, else could be drained in an attack
 
-        address lastWinner = address(0); // set initial value to 0 address
-        uint256 winnerCount = 0;
+        // todo: need to tweak callback gas limit; set to max?
+        sale.randomizerId = randomizer.request(50000);
+        randomizerIdToSalesId[sale.randomizerId] = saleId;
+    }
 
+    // Callback function called by the randomizer contract when the random value is generated
+    // Picks the winners
+    function randomizerCallback(uint256 _id, bytes32 _value) external {
+        require(msg.sender == address(randomizer), "Caller not Randomizer");
+        bytes32 saleId = randomizerIdToSalesId[_id];
+        Sale storage sale = sales[saleId];
+        require(sale.randomizerId == _id, "Invalid randomizer id"); // overzealous check
+
+        uint256 randomNumber = uint256(_value);
+
+        // pick a winner from the participants array - i
+        // move the winner to the start of the array
         for (uint256 i = 0; i < sale.supply; i++) {
             // Use a cryptographic hash to generate a random index to select a winner from the participants array.
-            uint256 winnerIndex = uint256(
-                keccak256(
-                    abi.encodePacked(
-                        block.timestamp,
-                        winnerCount,
-                        lastWinner,
-                        sale.participantCount
-                    )
-                )
-            ) % winnerCount;
-            address winner = sale.participants[winnerIndex];
+            uint256 winnerIndex = (uint256(
+                keccak256(abi.encodePacked(block.timestamp, randomNumber, i))
+            ) % (sale.participantsArr.length - i)) + i;
+            address winner = sale.participantsArr[winnerIndex];
+            sale.winners.push(winner);
 
-            lastWinner = winner;
-            winnerCount++;
-            distList[i] = winner;
-
-            // Move the winner to the beginning of the participants array by swapping their position with the participant at the current index.
-            address iParticipant = sale.participants[i];
-            sale.participants[i] = winner;
-            sale.participants[winnerIndex] = iParticipant;
-
-            reward.safeTransferFrom(
-                address(this),
-                winner,
-                _rewardTokenId,
-                1,
-                ""
-            );
+            // swap the winner to the front of the array
+            address iParticipant = sale.participantsArr[i];
+            sale.participantsArr[i] = winner;
+            sale.participantsArr[winnerIndex] = iParticipant;
         }
+    }
 
-        if (sale.price > 0) {
-            for (uint256 i = sale.supply - 1; i < sale.participantCount; i++) {
-                address participant = sale.participants[i];
+    // can't give back ETH to losers, so we just give them the token
+    // convenience function for the team to trigger perhaps
+    function executeRewardAirdrop(bytes32 saleId) external {
+        Sale storage sale = sales[saleId];
 
-                uint256 totalFunds = sale.price * sale.participantCount;
-                uint256 nonWinnerFunds = totalFunds -
-                    (sale.price * winnerCount);
+        require(sale.winners.length > 0, "No winners yet");
 
-                uint256 refundAmount = nonWinnerFunds / sale.price;
-                bool success = payable(participant).send(refundAmount);
-                require(success, "Failed to send refund");
+        // transfer the reward tokens to the winners
+        for (uint256 i = 0; i < sale.supply; i++) {
+            address winner = sale.winners[i];
+            if (sale.withdrawn[winner]) {
+                // winner might have already withdrawn before airdrop
+                continue;
+            } else {
+                sale.withdrawn[winner] = true;
+                ERC1155(sale.rewardToken).safeTransferFrom(
+                    address(this),
+                    winner,
+                    sale.rewardTokenId,
+                    1,
+                    ""
+                );
+                emit Withdrawal(saleId, winner);
+            }
+        }
+    }
+
+    function withdraw(bytes32 saleId, address participant) external {
+        Sale storage sale = sales[saleId];
+
+        require(sale.winners.length > 0, "No winners yet");
+
+        require(!sale.withdrawn[participant], "Already withdrawn.");
+
+        require(
+            sale.participantsMap[participant],
+            "participant not in this sale."
+        );
+
+        // run through winners to see if participant is a winner
+        for (uint256 i = 0; i < sale.supply; i++) {
+            if (sale.winners[i] == participant) {
+                sale.withdrawn[participant] = true;
+                ERC1155(sale.rewardToken).safeTransferFrom(
+                    address(this),
+                    participant,
+                    sale.rewardTokenId,
+                    1,
+                    ""
+                );
+                emit Withdrawal(saleId, participant);
+                return;
             }
         }
 
-        emit Distribute(distList, _rewardTokenId);
-
-        delete sales[_rewardTokenId];
+        // if the code reached here, must be a loser
+        if (sale.price > 0) {
+            sale.withdrawn[participant] = true;
+            bool success = payable(participant).send(sale.price);
+            require(success, "Failed to send refund");
+        }
     }
 
-    // Allows participants to withdraw their deposit if API3 QRNG fails to generate randomness within 30 days after the sale has ended.
+    // Allows participants to withdraw their deposit if random number generator fails to callback within 30 days after the sale has ended.
     // Participants can only withdraw their deposit once, and only if a deposit was required for the sale.
-    function withdraw(uint256 _rewardTokenId) external nonReentrant {
-        Sale storage sale = sales[_rewardTokenId];
+    function withdrawOnFailedSale(bytes32 saleId, address participant)
+        external
+    {
+        Sale storage sale = sales[saleId];
 
         require(sale.endTime != 0, "Sale does not exist.");
+
         require(
             block.timestamp > sale.endTime + 30 days,
             "Withdrawal period has not yet started."
         );
         require(sale.price > 0, "Sale did not require a deposit.");
-        require(sale.stake[_rewardTokenId], "Token already withdrawn.");
 
-        sale.stake[_rewardTokenId] = false;
-        bool success = payable(msg.sender).send(sale.price);
+        require(
+            sale.participantsMap[participant],
+            "participant not in this sale."
+        );
+
+        require(!sale.withdrawn[participant], "Already withdrawn.");
+
+        sale.withdrawn[participant] = true;
+
+        bool success = payable(participant).send(sale.price);
         require(success, "Failed to send refund");
+    }
+
+    // ----------- House Keeping Function for Admins ------------ //
+    function sweep(uint256 amount) external onlyOwner {
+        bool success = payable(msg.sender).send(amount);
+        require(success, "Failed to send sweep");
+    }
+
+    function fundRandomizer(uint256 amount) external onlyOwner {
+        randomizer.clientDeposit{value: amount}(address(this));
+    }
+
+    function withdrawRandomizer(uint256 amount) external onlyOwner {
+        randomizer.clientWithdrawTo(address(this), amount);
     }
 }

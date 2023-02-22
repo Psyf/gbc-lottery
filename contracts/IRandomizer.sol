@@ -7,4 +7,6 @@ interface IRandomizer {
         returns (uint256);
 
     function clientWithdrawTo(address _to, uint256 _amount) external;
+
+    function clientDeposit(address _for) external payable;
 }

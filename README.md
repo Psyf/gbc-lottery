@@ -5,8 +5,9 @@
 0. `Admin` creates a `Sale` with REWARD_TOKEN(s) (NFT).
 1. People "mark" (_not stake_) their `GBC NFT` on the `Lottery` system to participate in any sale. Participants may need to deposit X ETH as well, as specified by each `Sale`.
 2. At (or after) `endTime`, anyone can call a function to trigger a random number generator. This will determines winners.
-3. Winners come and take their rewards.
-4. Losers come and take back their deposits.
+3. Winners come and take their rewards. They don't get back deposits.
+4. Losers get their deposits back.
+5. Winner's deposits sit in the contract. `Admin` can withdraw the winners' deposits.
 
 ## Caveats
 
