@@ -1,57 +1,24 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.17;
 
-import {ERC1155} from "solmate/src/tokens/ERC1155.sol";
 import {ERC721} from "solmate/src/tokens/ERC721.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IRandomizer} from "./IRandomizer.sol";
+import {Auth, Authority} from "solmate/src/auth/Auth.sol";
+import {IRandomizer} from "./interfaces/IRandomizer.sol";
+import {IGBCLab} from "./interfaces/IGBCLab.sol";
+import {LotteryEvents} from "./LotteryEvents.sol";
+import {Sale} from "./Sale.sol";
 
-struct Sale {
-    // static setting by admin
-    address markToken; // The address of the ERC721 token that participants must mark to participate in the sale.
-    address rewardToken; // The address of the ERC1155 token that will be distributed to winners.
-    uint256 rewardTokenId; // The ID of the ERC1155 token that will be distributed to winners.
-    uint256 supply; // The number of reward tokens to distribute in the sale; also == number of winners.
-    uint256 price; // The price in wei that a participant must pay to participate.
-    uint256 endTime; // The block.timestamp after which participants cannot participate.
-    // dynamic data during sale
-    address[] participantsArr; // An array of addresses of participants in the sale.
-    mapping(address => bool) participantsMap; // A mapping of participants to whether they have participated or not, so we can prevent someone from participating twice.
-    mapping(uint256 => bool) marks; // A mapping of marked token IDs to track which tokens have been used for participation.
-    // data after sale
-    uint256 randomizerId; // The ID of the randomizer request; used to prevent spamming randomizer requests.
-    address[] winners; // An array of winners of the sale.
-    mapping(address => bool) withdrawn; // A mapping of participants to whether they have withdrawn their deposit/reward or not.
-}
-
-contract Lottery is Ownable {
+contract Lottery is LotteryEvents, Auth {
     mapping(bytes32 => Sale) public sales;
     mapping(uint256 => bytes32) public randomizerIdToSalesId;
     uint256 public reserves; // stores the amount of ETH the contract holds AND owns
-
-    event Participation(
-        bytes32 indexed saleId,
-        address indexed participant,
-        uint256 markTokenId
-    );
-
-    //todo: remove event Distribute(address[] winners, uint256 tokenId);
-
-    event SaleCreation(
-        bytes32 indexed saleId,
-        address markToken,
-        address rewardToken,
-        uint256 rewardTokenId,
-        uint256 supply,
-        uint256 price,
-        uint256 endTime
-    );
-
-    event Withdrawal(bytes32 indexed saleId, address indexed participant);
-
     IRandomizer public randomizer;
 
-    constructor(address _randomizerAddress) {
+    constructor(
+        address _owner,
+        Authority _authority,
+        address _randomizerAddress
+    ) Auth(_owner, _authority) {
         randomizer = IRandomizer(_randomizerAddress);
         reserves = 0;
     }
@@ -64,7 +31,7 @@ contract Lottery is Ownable {
         uint256 _supply,
         uint256 _price,
         uint256 _endTime
-    ) external onlyOwner {
+    ) external requiresAuth {
         require(_supply > 0, "Sale supply must be greater than zero.");
         require(
             _endTime > block.timestamp,
@@ -195,8 +162,7 @@ contract Lottery is Ownable {
                 continue;
             } else {
                 sale.withdrawn[winner] = true;
-                ERC1155(sale.rewardToken).safeTransferFrom(
-                    address(this),
+                IGBCLab(sale.rewardToken).mint(
                     winner,
                     sale.rewardTokenId,
                     1,
@@ -223,8 +189,7 @@ contract Lottery is Ownable {
         for (uint256 i = 0; i < sale.supply; i++) {
             if (sale.winners[i] == participant) {
                 sale.withdrawn[participant] = true;
-                ERC1155(sale.rewardToken).safeTransferFrom(
-                    address(this),
+                IGBCLab(sale.rewardToken).mint(
                     participant,
                     sale.rewardTokenId,
                     1,
@@ -271,21 +236,21 @@ contract Lottery is Ownable {
         require(success, "Failed to send refund");
     }
 
-    // ----------- House Keeping Function for Admins ------------ //
-    function sweep(uint256 amount) external onlyOwner {
+    // ----------- House Keeping Functions for Admins ------------ //
+    function sweep(uint256 amount) external requiresAuth {
         require(reserves >= amount, "Insufficient reserves");
         bool success = payable(msg.sender).send(amount);
         require(success, "Failed to send sweep");
         reserves -= amount;
     }
 
-    function fundRandomizer(uint256 amount) external onlyOwner {
+    function fundRandomizer(uint256 amount) external requiresAuth {
         require(reserves >= amount, "Insufficient reserves");
         randomizer.clientDeposit{value: amount}(address(this));
         reserves -= amount;
     }
 
-    function withdrawRandomizer(uint256 amount) external onlyOwner {
+    function withdrawRandomizer(uint256 amount) external requiresAuth {
         randomizer.clientWithdrawTo(address(this), amount);
         reserves += amount;
     }

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Unlicense
+pragma solidity ^0.8.17;
+
 // Randomizer protocol interface
 interface IRandomizer {
     function request(uint256 callbackGasLimit) external returns (uint256);
