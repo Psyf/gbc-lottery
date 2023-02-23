@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.17;
+
 import {Auth, Authority} from "solmate/src/auth/Auth.sol";
 import {IRandomizer} from "./interfaces/IRandomizer.sol";
 import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
