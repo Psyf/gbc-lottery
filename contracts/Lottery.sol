@@ -205,6 +205,12 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         if (sale.price > 0) {
             sale.withdrawn[participant] = true;
             emit Withdrawal(saleId, participant);
+
+            // explanation:
+            // reentrancy guard is in place, no problem to send ETH here.
+            // if the send fails, the transaction will revert and the state will be unchanged.
+            // all other participants should still be able to withdraw
+            // slither-disable-next-line arbitrary-send
             bool success = payable(participant).send(sale.price);
             require(success, "Failed to send refund");
         }
@@ -235,6 +241,11 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
 
         sale.withdrawn[participant] = true;
 
+        // explanation:
+        // reentrancy guard is in place, no problem to send ETH here.
+        // if the send fails, the transaction will revert and the state will be unchanged.
+        // all other participants should still be able to withdraw
+        // slither-disable-next-line arbitrary-send
         bool success = payable(participant).send(sale.price);
         require(success, "Failed to send refund");
     }
