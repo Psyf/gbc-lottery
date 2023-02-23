@@ -2,26 +2,21 @@
 pragma solidity ^0.8.17;
 
 import {ERC721} from "solmate/src/tokens/ERC721.sol";
-import {Auth, Authority} from "solmate/src/auth/Auth.sol";
-import {IRandomizer} from "./interfaces/IRandomizer.sol";
 import {IGBCLab} from "./interfaces/IGBCLab.sol";
+import {Authority} from "solmate/src/auth/Auth.sol";
 import {LotteryEvents} from "./LotteryEvents.sol";
+import {LotteryHouseKeeping} from "./LotteryHouseKeeping.sol";
 import {Sale} from "./Sale.sol";
 
-contract Lottery is LotteryEvents, Auth {
+contract Lottery is LotteryEvents, LotteryHouseKeeping {
     mapping(bytes32 => Sale) public sales;
     mapping(uint256 => bytes32) public randomizerIdToSalesId;
-    uint256 public reserves; // stores the amount of ETH the contract holds AND owns
-    IRandomizer public randomizer;
 
     constructor(
         address _owner,
         Authority _authority,
         address _randomizerAddress
-    ) Auth(_owner, _authority) {
-        randomizer = IRandomizer(_randomizerAddress);
-        reserves = 0;
-    }
+    ) LotteryHouseKeeping(_owner, _authority, _randomizerAddress) {}
 
     // function that allows the contract owner to create a new sale with the given parameters
     function createSale(
@@ -107,7 +102,7 @@ contract Lottery is LotteryEvents, Auth {
     }
 
     // can be poked by anyone to start the end process of the lottery
-    function getRandomNumber(bytes32 saleId) external {
+    function getRandomNumber(bytes32 saleId) external nonReentrant {
         Sale storage sale = sales[saleId];
         require(sale.endTime != 0, "Sale does not exist.");
         require(block.timestamp >= sale.endTime, "Sale has not ended.");
@@ -120,7 +115,10 @@ contract Lottery is LotteryEvents, Auth {
 
     // Callback function called by the randomizer contract when the random value is generated
     // Picks the winners
-    function randomizerCallback(uint256 _id, bytes32 _value) external {
+    function randomizerCallback(uint256 _id, bytes32 _value)
+        external
+        nonReentrant
+    {
         require(msg.sender == address(randomizer), "Caller not Randomizer");
         bytes32 saleId = randomizerIdToSalesId[_id];
         Sale storage sale = sales[saleId];
@@ -133,7 +131,7 @@ contract Lottery is LotteryEvents, Auth {
         for (uint256 i = 0; i < sale.supply; i++) {
             // Use a cryptographic hash to generate a random index to select a winner from the participants array.
             uint256 winnerIndex = (uint256(
-                keccak256(abi.encodePacked(block.timestamp, randomNumber, i))
+                keccak256(abi.encodePacked(randomNumber, i))
             ) % (sale.participantsArr.length - i)) + i;
             address winner = sale.participantsArr[winnerIndex];
             sale.winners.push(winner);
@@ -149,7 +147,7 @@ contract Lottery is LotteryEvents, Auth {
 
     // can't give back ETH to losers, so we just give them the token
     // convenience function for the team to trigger perhaps
-    function executeRewardAirdrop(bytes32 saleId) external {
+    function executeRewardAirdrop(bytes32 saleId) external nonReentrant {
         Sale storage sale = sales[saleId];
 
         require(sale.winners.length > 0, "No winners yet");
@@ -162,18 +160,21 @@ contract Lottery is LotteryEvents, Auth {
                 continue;
             } else {
                 sale.withdrawn[winner] = true;
+                emit Withdrawal(saleId, winner);
                 IGBCLab(sale.rewardToken).mint(
                     winner,
                     sale.rewardTokenId,
                     1,
                     ""
                 );
-                emit Withdrawal(saleId, winner);
             }
         }
     }
 
-    function withdraw(bytes32 saleId, address participant) external {
+    function withdraw(bytes32 saleId, address participant)
+        external
+        nonReentrant
+    {
         Sale storage sale = sales[saleId];
 
         require(sale.winners.length > 0, "No winners yet");
@@ -189,13 +190,13 @@ contract Lottery is LotteryEvents, Auth {
         for (uint256 i = 0; i < sale.supply; i++) {
             if (sale.winners[i] == participant) {
                 sale.withdrawn[participant] = true;
+                emit Withdrawal(saleId, participant);
                 IGBCLab(sale.rewardToken).mint(
                     participant,
                     sale.rewardTokenId,
                     1,
                     ""
                 );
-                emit Withdrawal(saleId, participant);
                 return;
             }
         }
@@ -203,6 +204,7 @@ contract Lottery is LotteryEvents, Auth {
         // if the code reached here, must be a loser
         if (sale.price > 0) {
             sale.withdrawn[participant] = true;
+            emit Withdrawal(saleId, participant);
             bool success = payable(participant).send(sale.price);
             require(success, "Failed to send refund");
         }
@@ -212,6 +214,7 @@ contract Lottery is LotteryEvents, Auth {
     // Participants can only withdraw their deposit once, and only if a deposit was required for the sale.
     function withdrawOnFailedSale(bytes32 saleId, address participant)
         external
+        nonReentrant
     {
         Sale storage sale = sales[saleId];
 
@@ -234,24 +237,5 @@ contract Lottery is LotteryEvents, Auth {
 
         bool success = payable(participant).send(sale.price);
         require(success, "Failed to send refund");
-    }
-
-    // ----------- House Keeping Functions for Admins ------------ //
-    function sweep(uint256 amount) external requiresAuth {
-        require(reserves >= amount, "Insufficient reserves");
-        bool success = payable(msg.sender).send(amount);
-        require(success, "Failed to send sweep");
-        reserves -= amount;
-    }
-
-    function fundRandomizer(uint256 amount) external requiresAuth {
-        require(reserves >= amount, "Insufficient reserves");
-        randomizer.clientDeposit{value: amount}(address(this));
-        reserves -= amount;
-    }
-
-    function withdrawRandomizer(uint256 amount) external requiresAuth {
-        randomizer.clientWithdrawTo(address(this), amount);
-        reserves += amount;
     }
 }
