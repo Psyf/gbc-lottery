@@ -26,10 +26,22 @@ contract LotteryHouseKeeping is Auth, ReentrancyGuard {
         require(success, "Failed to send sweep");
     }
 
-    function fundRandomizer(uint256 amount) external requiresAuth nonReentrant {
-        require(reserves >= amount, "Insufficient reserves");
-        reserves -= amount;
-        randomizer.clientDeposit{value: amount}(address(this));
+    function fundRandomizer(uint256 amount)
+        external
+        payable
+        requiresAuth
+        nonReentrant
+    {
+        // directly funded by admin
+        if (msg.value > 0) {
+            require(amount == msg.value, "Amount must match msg.value");
+            randomizer.clientDeposit{value: msg.value}(address(this));
+        } else {
+            // funded by contract
+            require(reserves >= amount, "Insufficient reserves");
+            reserves -= amount;
+            randomizer.clientDeposit{value: amount}(address(this));
+        }
     }
 
     function withdrawRandomizer(uint256 amount)
