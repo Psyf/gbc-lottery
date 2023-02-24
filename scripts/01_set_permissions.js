@@ -79,30 +79,18 @@ async function main() {
   // ---------- //
 
   // -- LOTTERY_ADMIN -- //
-  await police.setRoleCapability(
-    LOTTERY_ADMIN_ROLE_NUMBER,
-    lotteryAddr,
-    "0x0", // msg.sig of createSale()
-    true
-  );
-  await police.setRoleCapability(
-    LOTTERY_ADMIN_ROLE_NUMBER,
-    lotteryAddr,
-    "0x0", // msg.sig of sweep()
-    true
-  );
-  await police.setRoleCapability(
-    LOTTERY_ADMIN_ROLE_NUMBER,
-    lotteryAddr,
-    "0x0", // msg.sig of fundRandomizer()
-    true
-  );
-  await police.setRoleCapability(
-    LOTTERY_ADMIN_ROLE_NUMBER,
-    lotteryAddr,
-    "0x0", // msg.sig of withdrawRandomizer()
-    true
-  );
+  const Lottery = await ethers.getContractFactory("Lottery");
+  methods = ["createSale", "sweep", "fundRandomizer", "withdrawRandomizer"];
+  for (const method of methods) {
+    const fragment = Lottery.interface.getFunction(method);
+    const selectorHash = Lottery.interface.getSighash(fragment);
+    await police.setRoleCapability(
+      LOTTERY_ADMIN_ROLE_NUMBER,
+      lotteryAddr,
+      selectorHash,
+      true
+    );
+  }
 
   await police.setUserRole(lottery_admin_addr, LOTTERY_ADMIN_ROLE_NUMBER, true);
   // ---------- //

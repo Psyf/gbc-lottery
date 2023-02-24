@@ -316,7 +316,7 @@ export interface Lottery extends BaseContract {
 
     fundRandomizer(
       amount: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
     getRandomNumber(
@@ -422,7 +422,7 @@ export interface Lottery extends BaseContract {
 
   fundRandomizer(
     amount: PromiseOrValue<BigNumberish>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
+    overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
   getRandomNumber(
@@ -686,7 +686,7 @@ export interface Lottery extends BaseContract {
 
     fundRandomizer(
       amount: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
     getRandomNumber(
@@ -775,7 +775,7 @@ export interface Lottery extends BaseContract {
 
     fundRandomizer(
       amount: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
+      overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
     getRandomNumber(
