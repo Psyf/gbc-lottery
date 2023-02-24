@@ -13,10 +13,6 @@ import * as Contracts from ".";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
-      name: "Ownable",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Ownable__factory>;
-    getContractFactory(
       name: "IGBCLab",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IGBCLab__factory>;
@@ -45,14 +41,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Authority__factory>;
     getContractFactory(
-      name: "ERC1155",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ERC1155__factory>;
-    getContractFactory(
-      name: "ERC1155TokenReceiver",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ERC1155TokenReceiver__factory>;
-    getContractFactory(
       name: "ERC721",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ERC721__factory>;
@@ -61,11 +49,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ERC721TokenReceiver__factory>;
 
-    getContractAt(
-      name: "Ownable",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.Ownable>;
     getContractAt(
       name: "IGBCLab",
       address: string,
@@ -101,16 +84,6 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.Authority>;
-    getContractAt(
-      name: "ERC1155",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ERC1155>;
-    getContractAt(
-      name: "ERC1155TokenReceiver",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ERC1155TokenReceiver>;
     getContractAt(
       name: "ERC721",
       address: string,
