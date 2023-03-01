@@ -1,15 +1,21 @@
 # Spec
 
-0. `Admin` creates a `Sale` with an ERC721 as markToken and a MintableERC1155 as rewardToken. \
-   a. For GBCLottery, markToken is GBC NFT and rewardToken is GBCLab NFT.
+0. **ADMIN ONLY:** creates a `Sale` with an ERC721 as markToken and a MintableERC1155 as rewardToken. \
+   a. For GBCLottery, markToken is GBC NFT and rewardToken is GBCLab NFT. \
+   b. Admin gating is done using solmate's RBAC. \
 1. People `mark` their `GBC NFT` on the `Lottery` system to participate in any sale. Participants may need to deposit `price` ETH as well, as specified by each `Sale`. \
    a. Important to clarify that mark != stake
 2. At (or after) `endTime`, anyone can call a function to trigger a random number generator. This will determines winners. \
-   a. If the random number generation does not happen within 30 days from endTime, the `Sale` is considered failed and the participants can withdraw their deposits.
-3. Winners come and take their rewards. \
+   a. Randomizer VRF is used to generate a random number. See [https://randomizer.ai/docs](https://randomizer.ai/docs) \
+   b. **FAILURE MODE:** Random number generation may fail if `randomizerCallback()` is not called by randomizer. \
+   c. **FAILSAFE:** 30 days after `Sale.endtime` all participants can withdraw their deposits.
+3. Winners come and take their rewards by calling `withdraw(saleId, address)` \
    a.They don't get back deposits. \
-   b. Admin` can withdraw the winners' deposits.
-4. Losers get their deposits back.
+   b. **FAILURE MODE:** If `onERC1155received()` does something to make the tx revert, winner will miss out on reward. \
+4. Losers get their deposits back `withdraw(saleId, address)`.
+   b. **FAILURE MODE:** If `participantAddr.receive()` does something to make the tx revert, loser will not be able to get the refund. \
+
+Note on 2b, 3 and 4: See convenience function section on `Lottery.sol`
 
 # Caveats
 
@@ -21,7 +27,4 @@
 
 # Noteworthy
 
-1. RBAC enabled.
-2. Random Number Generation
-3. Winner Selection Algorithm
-4. Convenience airdrop function, failure modes and fallbacks
+1. Winner Selection Algorithm
