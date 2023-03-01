@@ -25,6 +25,14 @@ Note on 2b, 3 and 4: See convenience function section on `Lottery.sol`
 3. Each participant can only participate once per sale. \
    3a. This is to prevent people from using multiple NFTs to participate in the same sale to increase their chances of winning.
 
+# State Machine of Each Sale
+
+0. Sale DOES_NOT_EXIST
+1. Sale is created by admin -> OPEN [participants can take part]
+2. endTime is reached -> CLOSED [participants can no longer take part; someone can call `getRandomNumber()`]
+   2a. randomizer will call `randomizerCallback()` -> DECIDED [winners have been chosen]
+   2b. randomizer does nto call within 30 days after endTime -> FAILED [everyone can get refunded]
+
 # Noteworthy
 
 1. Winner Selection Algorithm
