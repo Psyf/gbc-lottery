@@ -145,32 +145,6 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         reserves += sale.price * sale.supply;
     }
 
-    // can't give back ETH to losers, so we just give them the token
-    // convenience function for the team to trigger perhaps
-    function executeRewardAirdrop(bytes32 saleId) external nonReentrant {
-        Sale storage sale = sales[saleId];
-
-        require(sale.winners.length > 0, "No winners yet");
-
-        // transfer the reward tokens to the winners
-        for (uint256 i = 0; i < sale.supply; i++) {
-            address winner = sale.winners[i];
-            if (sale.withdrawn[winner]) {
-                // winner might have already withdrawn before airdrop
-                continue;
-            } else {
-                sale.withdrawn[winner] = true;
-                emit Withdrawal(saleId, winner);
-                IGBCLab(sale.rewardToken).mint(
-                    winner,
-                    sale.rewardTokenId,
-                    1,
-                    ""
-                );
-            }
-        }
-    }
-
     function withdraw(bytes32 saleId, address participant)
         external
         nonReentrant
@@ -216,6 +190,8 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         }
     }
 
+    /* ========== FAILSAFE ========== */
+
     // Allows participants to withdraw their deposit if random number generator fails to callback within 30 days after the sale has ended.
     // Participants can only withdraw their deposit once, and only if a deposit was required for the sale.
     function withdrawOnFailedSale(bytes32 saleId, address participant)
@@ -248,5 +224,68 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         // slither-disable-next-line arbitrary-send
         bool success = payable(participant).send(sale.price);
         require(success, "Failed to send refund");
+    }
+
+    /* ========== CONVENIENCE FUNCTIONS ========== */
+
+    // can't give back ETH to losers, so we just give them the token
+    // convenience function for the team to trigger perhaps
+    function _executeRewardAirdrop(bytes32 saleId) internal {
+        Sale storage sale = sales[saleId];
+
+        require(sale.winners.length > 0, "No winners yet");
+
+        // transfer the reward tokens to the winners
+        for (uint256 i = 0; i < sale.supply; i++) {
+            address winner = sale.winners[i];
+            if (sale.withdrawn[winner]) {
+                // winner might have already withdrawn before airdrop
+                continue;
+            } else {
+                sale.withdrawn[winner] = true;
+                emit Withdrawal(saleId, winner);
+                IGBCLab(sale.rewardToken).mint(
+                    winner,
+                    sale.rewardTokenId,
+                    1,
+                    ""
+                );
+            }
+        }
+    }
+
+    function _executeRefundDeposits(bytes32 saleId) internal {
+        Sale storage sale = sales[saleId];
+
+        require(sale.winners.length > 0, "No winners yet");
+
+        // transfer the deposits back to the losers
+        for (uint256 i = sale.supply; i < sale.participantsArr.length; i++) {
+            address loser = sale.participantsArr[i];
+            if (sale.withdrawn[loser]) {
+                // loser might have already withdrawn before airdrop
+                continue;
+            } else {
+                sale.withdrawn[loser] = true;
+                emit Withdrawal(saleId, loser);
+                payable(loser).transfer(sale.price);
+            }
+        }
+    }
+
+    function executeRewardAirdrop(bytes32 saleId) external nonReentrant {
+        _executeRewardAirdrop(saleId);
+    }
+
+    function executeRefundDeposits(bytes32 saleId) external nonReentrant {
+        _executeRefundDeposits(saleId);
+    }
+
+    function executeRewardAirdropAndRefundDeposits(bytes32 saleId)
+        external
+        nonReentrant
+    {
+        _executeRewardAirdrop(saleId);
+        _executeRefundDeposits(saleId);
     }
 }
