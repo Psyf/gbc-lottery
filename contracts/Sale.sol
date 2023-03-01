@@ -18,3 +18,11 @@ struct Sale {
     address[] winners; // An array of winners of the sale.
     mapping(address => bool) withdrawn; // A mapping of participants to whether they have withdrawn their deposit/reward or not.
 }
+
+enum State {
+    DOES_NOT_EXIST,
+    OPEN,
+    CLOSED,
+    DECIDED,
+    FAILED
+}

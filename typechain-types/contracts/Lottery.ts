@@ -32,9 +32,13 @@ export interface LotteryInterface extends utils.Interface {
   functions: {
     "authority()": FunctionFragment;
     "createSale(address,address,uint256,uint256,uint256,uint256)": FunctionFragment;
-    "executeRewardAirdrop(bytes32)": FunctionFragment;
+    "executeAirdropForWinners(bytes32)": FunctionFragment;
+    "executeAirdropForWinnersAndRefundForLosers(bytes32)": FunctionFragment;
+    "executeRefundAllOnFailedSale(bytes32)": FunctionFragment;
+    "executeRefundForLosers(bytes32)": FunctionFragment;
     "fundRandomizer(uint256)": FunctionFragment;
     "getRandomNumber(bytes32)": FunctionFragment;
+    "getState(bytes32)": FunctionFragment;
     "owner()": FunctionFragment;
     "participate(bytes32,uint256)": FunctionFragment;
     "randomizer()": FunctionFragment;
@@ -46,7 +50,7 @@ export interface LotteryInterface extends utils.Interface {
     "sweep(uint256)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "withdraw(bytes32,address)": FunctionFragment;
-    "withdrawOnFailedSale(bytes32,address)": FunctionFragment;
+    "withdrawMulti(bytes32,address[])": FunctionFragment;
     "withdrawRandomizer(uint256)": FunctionFragment;
   };
 
@@ -54,9 +58,13 @@ export interface LotteryInterface extends utils.Interface {
     nameOrSignatureOrTopic:
       | "authority"
       | "createSale"
-      | "executeRewardAirdrop"
+      | "executeAirdropForWinners"
+      | "executeAirdropForWinnersAndRefundForLosers"
+      | "executeRefundAllOnFailedSale"
+      | "executeRefundForLosers"
       | "fundRandomizer"
       | "getRandomNumber"
+      | "getState"
       | "owner"
       | "participate"
       | "randomizer"
@@ -68,7 +76,7 @@ export interface LotteryInterface extends utils.Interface {
       | "sweep"
       | "transferOwnership"
       | "withdraw"
-      | "withdrawOnFailedSale"
+      | "withdrawMulti"
       | "withdrawRandomizer"
   ): FunctionFragment;
 
@@ -85,7 +93,19 @@ export interface LotteryInterface extends utils.Interface {
     ]
   ): string;
   encodeFunctionData(
-    functionFragment: "executeRewardAirdrop",
+    functionFragment: "executeAirdropForWinners",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "executeAirdropForWinnersAndRefundForLosers",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "executeRefundAllOnFailedSale",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "executeRefundForLosers",
     values: [PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
@@ -94,6 +114,10 @@ export interface LotteryInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getRandomNumber",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getState",
     values: [PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
@@ -135,8 +159,8 @@ export interface LotteryInterface extends utils.Interface {
     values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
-    functionFragment: "withdrawOnFailedSale",
-    values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>]
+    functionFragment: "withdrawMulti",
+    values: [PromiseOrValue<BytesLike>, PromiseOrValue<string>[]]
   ): string;
   encodeFunctionData(
     functionFragment: "withdrawRandomizer",
@@ -146,7 +170,19 @@ export interface LotteryInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "authority", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "createSale", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "executeRewardAirdrop",
+    functionFragment: "executeAirdropForWinners",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "executeAirdropForWinnersAndRefundForLosers",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "executeRefundAllOnFailedSale",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "executeRefundForLosers",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -157,6 +193,7 @@ export interface LotteryInterface extends utils.Interface {
     functionFragment: "getRandomNumber",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "getState", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "participate",
@@ -184,7 +221,7 @@ export interface LotteryInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "withdrawOnFailedSale",
+    functionFragment: "withdrawMulti",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -309,7 +346,22 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    executeRewardAirdrop(
+    executeAirdropForWinners(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    executeAirdropForWinnersAndRefundForLosers(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    executeRefundAllOnFailedSale(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    executeRefundForLosers(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
@@ -323,6 +375,11 @@ export interface Lottery extends BaseContract {
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
+
+    getState(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[number]>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
@@ -391,9 +448,9 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    withdrawOnFailedSale(
+    withdrawMulti(
       saleId: PromiseOrValue<BytesLike>,
-      participant: PromiseOrValue<string>,
+      participants: PromiseOrValue<string>[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
@@ -415,7 +472,22 @@ export interface Lottery extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  executeRewardAirdrop(
+  executeAirdropForWinners(
+    saleId: PromiseOrValue<BytesLike>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  executeAirdropForWinnersAndRefundForLosers(
+    saleId: PromiseOrValue<BytesLike>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  executeRefundAllOnFailedSale(
+    saleId: PromiseOrValue<BytesLike>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  executeRefundForLosers(
     saleId: PromiseOrValue<BytesLike>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
@@ -429,6 +501,11 @@ export interface Lottery extends BaseContract {
     saleId: PromiseOrValue<BytesLike>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
+
+  getState(
+    saleId: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<number>;
 
   owner(overrides?: CallOverrides): Promise<string>;
 
@@ -489,9 +566,9 @@ export interface Lottery extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
-  withdrawOnFailedSale(
+  withdrawMulti(
     saleId: PromiseOrValue<BytesLike>,
-    participant: PromiseOrValue<string>,
+    participants: PromiseOrValue<string>[],
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -513,7 +590,22 @@ export interface Lottery extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    executeRewardAirdrop(
+    executeAirdropForWinners(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    executeAirdropForWinnersAndRefundForLosers(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    executeRefundAllOnFailedSale(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    executeRefundForLosers(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<void>;
@@ -527,6 +619,11 @@ export interface Lottery extends BaseContract {
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    getState(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<number>;
 
     owner(overrides?: CallOverrides): Promise<string>;
 
@@ -595,9 +692,9 @@ export interface Lottery extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    withdrawOnFailedSale(
+    withdrawMulti(
       saleId: PromiseOrValue<BytesLike>,
-      participant: PromiseOrValue<string>,
+      participants: PromiseOrValue<string>[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -679,7 +776,22 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    executeRewardAirdrop(
+    executeAirdropForWinners(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    executeAirdropForWinnersAndRefundForLosers(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    executeRefundAllOnFailedSale(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    executeRefundForLosers(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
@@ -692,6 +804,11 @@ export interface Lottery extends BaseContract {
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    getState(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
@@ -743,9 +860,9 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
-    withdrawOnFailedSale(
+    withdrawMulti(
       saleId: PromiseOrValue<BytesLike>,
-      participant: PromiseOrValue<string>,
+      participants: PromiseOrValue<string>[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -768,7 +885,22 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
-    executeRewardAirdrop(
+    executeAirdropForWinners(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    executeAirdropForWinnersAndRefundForLosers(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    executeRefundAllOnFailedSale(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    executeRefundForLosers(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
@@ -781,6 +913,11 @@ export interface Lottery extends BaseContract {
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    getState(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -832,9 +969,9 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
-    withdrawOnFailedSale(
+    withdrawMulti(
       saleId: PromiseOrValue<BytesLike>,
-      participant: PromiseOrValue<string>,
+      participants: PromiseOrValue<string>[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

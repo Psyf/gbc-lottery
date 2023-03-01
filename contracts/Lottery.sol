@@ -6,7 +6,7 @@ import {IGBCLab} from "./interfaces/IGBCLab.sol";
 import {Authority} from "solmate/src/auth/Auth.sol";
 import {LotteryEvents} from "./LotteryEvents.sol";
 import {LotteryHouseKeeping} from "./LotteryHouseKeeping.sol";
-import {Sale} from "./Sale.sol";
+import {Sale, State} from "./Sale.sol";
 
 contract Lottery is LotteryEvents, LotteryHouseKeeping {
     mapping(bytes32 => Sale) public sales;
@@ -45,7 +45,10 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         );
 
         Sale storage sale = sales[saleId];
-        require(sale.endTime == 0, "Sale already exists.");
+        require(
+            getState(saleId) == State.DOES_NOT_EXIST,
+            "Sale already exists."
+        );
 
         sale.markToken = _markToken;
         sale.rewardToken = _rewardToken;
@@ -71,9 +74,7 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
     {
         Sale storage sale = sales[saleId];
 
-        require(sale.endTime != 0, "Sale does not exist.");
-
-        require(block.timestamp < sale.endTime, "Sale has ended.");
+        require(getState(saleId) == State.OPEN, "Sale is not active.");
 
         require(
             sale.price == msg.value,
@@ -104,8 +105,7 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
     // can be poked by anyone to start the end process of the lottery
     function getRandomNumber(bytes32 saleId) external nonReentrant {
         Sale storage sale = sales[saleId];
-        require(sale.endTime != 0, "Sale does not exist.");
-        require(block.timestamp >= sale.endTime, "Sale has not ended.");
+        require(getState(saleId) == State.CLOSED, "Sale is not closed.");
         require(sale.randomizerId == 0, "Already requested random nubmer"); // so we can only execute once per sale, else could be drained in an attack
 
         // todo: need to tweak callback gas limit; set to max?
@@ -149,64 +149,119 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         external
         nonReentrant
     {
+        _withdraw(saleId, participant);
+    }
+
+    function getState(bytes32 saleId) public view returns (State) {
         Sale storage sale = sales[saleId];
 
-        require(sale.winners.length > 0, "No winners yet");
-
-        require(!sale.withdrawn[participant], "Already withdrawn.");
-
-        require(
-            sale.participantsMap[participant],
-            "participant not in this sale."
-        );
-
-        // run through winners to see if participant is a winner
-        for (uint256 i = 0; i < sale.supply; i++) {
-            if (sale.winners[i] == participant) {
-                sale.withdrawn[participant] = true;
-                emit Withdrawal(saleId, participant);
-                IGBCLab(sale.rewardToken).mint(
-                    participant,
-                    sale.rewardTokenId,
-                    1,
-                    ""
-                );
-                return;
+        if (sale.endTime == 0) {
+            return State.DOES_NOT_EXIST;
+        } else {
+            if (block.timestamp < sale.endTime) {
+                // New participants can still enter
+                return State.OPEN;
+            } else {
+                // New participants can't enter
+                if (sale.winners.length > 0) {
+                    // randomizerCallback() called properly
+                    return State.DECIDED;
+                } else {
+                    if (block.timestamp > sale.endTime + 30 days) {
+                        return State.FAILED;
+                    } else {
+                        return State.CLOSED;
+                    }
+                }
             }
         }
+    }
 
-        // if the code reached here, must be a loser
-        if (sale.price > 0) {
-            sale.withdrawn[participant] = true;
+    /* -------------- Convenience functions -------------- */
+
+    function withdrawMulti(bytes32 saleId, address[] calldata participants)
+        external
+        nonReentrant
+    {
+        for (uint256 i = 0; i < participants.length; i++) {
+            _withdraw(saleId, participants[i]);
+        }
+    }
+
+    // gas optimized version of withdrawMulti(winners)
+    function executeAirdropForWinners(bytes32 saleId) external nonReentrant {
+        _executeAirdropForWinners(saleId);
+    }
+
+    // gas optimized version of withdrawMulti(losers)
+    function executeRefundForLosers(bytes32 saleId) external nonReentrant {
+        _executeRefundForLosers(saleId);
+    }
+
+    // gas optimized version of withdrawMulti(winners) + withdrawMulti(losers)
+    function executeAirdropForWinnersAndRefundForLosers(bytes32 saleId)
+        external
+        nonReentrant
+    {
+        _executeAirdropForWinners(saleId);
+        _executeRefundForLosers(saleId);
+    }
+
+    // gas optimized version of withdrawMulti(allParticipants) on failed sale
+    function executeRefundAllOnFailedSale(bytes32 saleId)
+        external
+        nonReentrant
+    {
+        require(getState(saleId) == State.FAILED, "State != Failed");
+
+        Sale storage sale = sales[saleId];
+
+        // transfer the deposits back to everyone
+        for (uint256 i = 0; i < sale.participantsArr.length; i++) {
+            address participant = sale.participantsArr[i];
+            if (sale.withdrawn[participant]) {
+                // loser might have already withdrawn before airdrop
+                continue;
+            } else {
+                sale.withdrawn[participant] = true;
+                _refund(saleId, participant, sale.price);
+            }
+        }
+    }
+
+    /* -------------- Internal functions -------------- */
+
+    function _refund(
+        bytes32 saleId,
+        address participant,
+        uint256 price
+    ) internal {
+        // DANGER: VALIDATE LOSER BEFORE CALLING THIS FUNCTION
+        if (price > 0) {
             emit Withdrawal(saleId, participant);
-
             // explanation:
             // reentrancy guard is in place, no problem to send ETH here.
             // if the send fails, the transaction will revert and the state will be unchanged.
             // all other participants should still be able to withdraw
             // slither-disable-next-line arbitrary-send
-            bool success = payable(participant).send(sale.price);
+            bool success = payable(participant).send(price);
             require(success, "Failed to send refund");
         }
     }
 
-    /* ========== FAILSAFE ========== */
+    function _airdrop(
+        bytes32 saleId,
+        address winner,
+        address rewardToken,
+        uint256 rewardTokenId
+    ) internal {
+        // DANGER: VALIDATE WINNER BEFORE CALLING THIS FUNCTION
+        emit Withdrawal(saleId, winner);
+        IGBCLab(rewardToken).mint(winner, rewardTokenId, 1, "");
+    }
 
-    // Allows participants to withdraw their deposit if random number generator fails to callback within 30 days after the sale has ended.
-    // Participants can only withdraw their deposit once, and only if a deposit was required for the sale.
-    function withdrawOnFailedSale(bytes32 saleId, address participant)
-        external
-        nonReentrant
-    {
+    function _withdraw(bytes32 saleId, address participant) internal {
         Sale storage sale = sales[saleId];
-
-        require(sale.endTime != 0, "Sale does not exist.");
-
-        require(
-            block.timestamp > sale.endTime + 30 days,
-            "Withdrawal period has not yet started."
-        );
-        require(sale.price > 0, "Sale did not require a deposit.");
 
         require(
             sale.participantsMap[participant],
@@ -217,23 +272,34 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
 
         sale.withdrawn[participant] = true;
 
-        // explanation:
-        // reentrancy guard is in place, no problem to send ETH here.
-        // if the send fails, the transaction will revert and the state will be unchanged.
-        // all other participants should still be able to withdraw
-        // slither-disable-next-line arbitrary-send
-        bool success = payable(participant).send(sale.price);
-        require(success, "Failed to send refund");
+        if (getState(saleId) == State.DECIDED) {
+            // run through winners to see if participant is a winner
+            for (uint256 i = 0; i < sale.supply; i++) {
+                if (sale.winners[i] == participant) {
+                    _airdrop(
+                        saleId,
+                        participant,
+                        sale.rewardToken,
+                        sale.rewardTokenId
+                    );
+                    return;
+                }
+            }
+
+            // if the code reached here, must be a loser
+            _refund(saleId, participant, sale.price);
+        } else if (getState(saleId) == State.FAILED) {
+            /* === failsafe === */
+            _refund(saleId, participant, sale.price);
+        } else {
+            revert("Sale not yet decided / failed");
+        }
     }
 
-    /* ========== CONVENIENCE FUNCTIONS ========== */
+    function _executeAirdropForWinners(bytes32 saleId) internal {
+        require(getState(saleId) == State.DECIDED, "State != Decided");
 
-    // can't give back ETH to losers, so we just give them the token
-    // convenience function for the team to trigger perhaps
-    function _executeRewardAirdrop(bytes32 saleId) internal {
         Sale storage sale = sales[saleId];
-
-        require(sale.winners.length > 0, "No winners yet");
 
         // transfer the reward tokens to the winners
         for (uint256 i = 0; i < sale.supply; i++) {
@@ -243,21 +309,15 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
                 continue;
             } else {
                 sale.withdrawn[winner] = true;
-                emit Withdrawal(saleId, winner);
-                IGBCLab(sale.rewardToken).mint(
-                    winner,
-                    sale.rewardTokenId,
-                    1,
-                    ""
-                );
+                _airdrop(saleId, winner, sale.rewardToken, sale.rewardTokenId);
             }
         }
     }
 
-    function _executeRefundDeposits(bytes32 saleId) internal {
-        Sale storage sale = sales[saleId];
+    function _executeRefundForLosers(bytes32 saleId) internal {
+        require(getState(saleId) == State.DECIDED, "State != Decided");
 
-        require(sale.winners.length > 0, "No winners yet");
+        Sale storage sale = sales[saleId];
 
         // transfer the deposits back to the losers
         for (uint256 i = sale.supply; i < sale.participantsArr.length; i++) {
@@ -267,25 +327,8 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
                 continue;
             } else {
                 sale.withdrawn[loser] = true;
-                emit Withdrawal(saleId, loser);
-                payable(loser).transfer(sale.price);
+                _refund(saleId, loser, sale.price);
             }
         }
-    }
-
-    function executeRewardAirdrop(bytes32 saleId) external nonReentrant {
-        _executeRewardAirdrop(saleId);
-    }
-
-    function executeRefundDeposits(bytes32 saleId) external nonReentrant {
-        _executeRefundDeposits(saleId);
-    }
-
-    function executeRewardAirdropAndRefundDeposits(bytes32 saleId)
-        external
-        nonReentrant
-    {
-        _executeRewardAirdrop(saleId);
-        _executeRefundDeposits(saleId);
     }
 }
