@@ -46,6 +46,5 @@ Fill up `03_add_sales.js` and run `yarn hardhat deploy --network <networkName>`
 
 ## LotteryHouseKeeping.sol
 
-- sweep() to get funds from Lottery.sol (winner's deposits only) -> from contract to whatever address specified
-- fundRandomizer() to fund randomizer -> can pay from contract, or give msg.value
-- withdrawRandomizer() to withdraw funds (if any) -> goes to contract
+- fundRandomizer() to fund randomizer with msg.value
+- withdrawRandomizer() to withdraw funds (if any) -> goes to owner

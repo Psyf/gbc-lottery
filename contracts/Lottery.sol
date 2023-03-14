@@ -147,7 +147,7 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
             }
         }
 
-        payable(owner).transfer(sale.price * sale.supply);
+        payable(fundReceiver).transfer(sale.price * sale.supply);
     }
 
     function withdraw(bytes32 saleId, address participant)

@@ -8,11 +8,13 @@ import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
 contract LotteryHouseKeeping is Auth, ReentrancyGuard {
     IRandomizer public randomizer;
     uint256 public randomizerCallbackGas = 100000;
+    address public fundReceiver;
 
     constructor(RolesAuthority police, address _randomizer)
         Auth(police.owner(), police)
     {
         randomizer = IRandomizer(_randomizer);
+        fundReceiver = police.owner();
     }
 
     // ----------- House Keeping Functions for Admins ------------ //
@@ -27,7 +29,7 @@ contract LotteryHouseKeeping is Auth, ReentrancyGuard {
         nonReentrant
     {
         randomizer.clientWithdrawTo(address(this), amount);
-        payable(owner).transfer(amount);
+        payable(fundReceiver).transfer(amount);
     }
 
     function modifyRandomizerCallbackGas(uint256 newLimit)
@@ -35,5 +37,9 @@ contract LotteryHouseKeeping is Auth, ReentrancyGuard {
         requiresAuth
     {
         randomizerCallbackGas = newLimit;
+    }
+
+    function changeFundReceiver(address newReceiver) external requiresAuth {
+        fundReceiver = newReceiver;
     }
 }
