@@ -3,6 +3,8 @@
 /* eslint-disable */
 import type * as interfaces from "./interfaces";
 export type { interfaces };
+import type * as tests from "./tests";
+export type { tests };
 export type { Lottery } from "./Lottery";
 export type { LotteryEvents } from "./LotteryEvents";
 export type { LotteryHouseKeeping } from "./LotteryHouseKeeping";

@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as interfaces from "./interfaces";
+export * as tests from "./tests";
 export { Lottery__factory } from "./Lottery__factory";
 export { LotteryEvents__factory } from "./LotteryEvents__factory";
 export { LotteryHouseKeeping__factory } from "./LotteryHouseKeeping__factory";

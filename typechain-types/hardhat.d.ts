@@ -33,6 +33,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.LotteryHouseKeeping__factory>;
     getContractFactory(
+      name: "MockRandomizer",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.MockRandomizer__factory>;
+    getContractFactory(
       name: "Auth",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Auth__factory>;
@@ -78,6 +82,11 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.LotteryHouseKeeping>;
+    getContractAt(
+      name: "MockRandomizer",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.MockRandomizer>;
     getContractAt(
       name: "Auth",
       address: string,

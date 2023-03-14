@@ -7,7 +7,7 @@ import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
 
 contract LotteryHouseKeeping is Auth, ReentrancyGuard {
     IRandomizer public randomizer;
-    uint256 public randomizerCallbackGas = 100000;
+    uint256 public randomizerCallbackGas = 2000000;
     address public fundReceiver;
 
     constructor(RolesAuthority police, address _randomizer)

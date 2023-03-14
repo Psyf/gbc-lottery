@@ -32,6 +32,7 @@ export interface LotteryInterface extends utils.Interface {
   functions: {
     "authority()": FunctionFragment;
     "changeFundReceiver(address)": FunctionFragment;
+    "changeRandomizerAddr(address)": FunctionFragment;
     "createSale(address,address,uint256,uint256,uint256,uint256)": FunctionFragment;
     "executeAirdropForWinners(bytes32)": FunctionFragment;
     "executeAirdropForWinnersAndRefundForLosers(bytes32)": FunctionFragment;
@@ -39,8 +40,10 @@ export interface LotteryInterface extends utils.Interface {
     "executeRefundForLosers(bytes32)": FunctionFragment;
     "fundRandomizer()": FunctionFragment;
     "fundReceiver()": FunctionFragment;
+    "getParticipants(bytes32)": FunctionFragment;
     "getRandomNumber(bytes32)": FunctionFragment;
     "getState(bytes32)": FunctionFragment;
+    "getWinners(bytes32)": FunctionFragment;
     "modifyRandomizerCallbackGas(uint256)": FunctionFragment;
     "owner()": FunctionFragment;
     "participate(bytes32,uint256)": FunctionFragment;
@@ -60,6 +63,7 @@ export interface LotteryInterface extends utils.Interface {
     nameOrSignatureOrTopic:
       | "authority"
       | "changeFundReceiver"
+      | "changeRandomizerAddr"
       | "createSale"
       | "executeAirdropForWinners"
       | "executeAirdropForWinnersAndRefundForLosers"
@@ -67,8 +71,10 @@ export interface LotteryInterface extends utils.Interface {
       | "executeRefundForLosers"
       | "fundRandomizer"
       | "fundReceiver"
+      | "getParticipants"
       | "getRandomNumber"
       | "getState"
+      | "getWinners"
       | "modifyRandomizerCallbackGas"
       | "owner"
       | "participate"
@@ -87,6 +93,10 @@ export interface LotteryInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "authority", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "changeFundReceiver",
+    values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "changeRandomizerAddr",
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
@@ -125,11 +135,19 @@ export interface LotteryInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "getParticipants",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getRandomNumber",
     values: [PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
     functionFragment: "getState",
+    values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getWinners",
     values: [PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
@@ -187,6 +205,10 @@ export interface LotteryInterface extends utils.Interface {
     functionFragment: "changeFundReceiver",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "changeRandomizerAddr",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "createSale", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "executeAirdropForWinners",
@@ -213,10 +235,15 @@ export interface LotteryInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getParticipants",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getRandomNumber",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getState", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getWinners", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "modifyRandomizerCallbackGas",
     data: BytesLike
@@ -370,6 +397,11 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     createSale(
       _markToken: PromiseOrValue<string>,
       _rewardToken: PromiseOrValue<string>,
@@ -406,6 +438,11 @@ export interface Lottery extends BaseContract {
 
     fundReceiver(overrides?: CallOverrides): Promise<[string]>;
 
+    getParticipants(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[string[]]>;
+
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -415,6 +452,11 @@ export interface Lottery extends BaseContract {
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<[number]>;
+
+    getWinners(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[string[]]>;
 
     modifyRandomizerCallbackGas(
       newLimit: PromiseOrValue<BigNumberish>,
@@ -502,6 +544,11 @@ export interface Lottery extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  changeRandomizerAddr(
+    newAddr: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   createSale(
     _markToken: PromiseOrValue<string>,
     _rewardToken: PromiseOrValue<string>,
@@ -538,6 +585,11 @@ export interface Lottery extends BaseContract {
 
   fundReceiver(overrides?: CallOverrides): Promise<string>;
 
+  getParticipants(
+    saleId: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<string[]>;
+
   getRandomNumber(
     saleId: PromiseOrValue<BytesLike>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -547,6 +599,11 @@ export interface Lottery extends BaseContract {
     saleId: PromiseOrValue<BytesLike>,
     overrides?: CallOverrides
   ): Promise<number>;
+
+  getWinners(
+    saleId: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<string[]>;
 
   modifyRandomizerCallbackGas(
     newLimit: PromiseOrValue<BigNumberish>,
@@ -626,6 +683,11 @@ export interface Lottery extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     createSale(
       _markToken: PromiseOrValue<string>,
       _rewardToken: PromiseOrValue<string>,
@@ -660,6 +722,11 @@ export interface Lottery extends BaseContract {
 
     fundReceiver(overrides?: CallOverrides): Promise<string>;
 
+    getParticipants(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<string[]>;
+
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
@@ -669,6 +736,11 @@ export interface Lottery extends BaseContract {
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<number>;
+
+    getWinners(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<string[]>;
 
     modifyRandomizerCallbackGas(
       newLimit: PromiseOrValue<BigNumberish>,
@@ -816,6 +888,11 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     createSale(
       _markToken: PromiseOrValue<string>,
       _rewardToken: PromiseOrValue<string>,
@@ -852,12 +929,22 @@ export interface Lottery extends BaseContract {
 
     fundReceiver(overrides?: CallOverrides): Promise<BigNumber>;
 
+    getParticipants(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
     getState(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getWinners(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
@@ -931,6 +1018,11 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
     createSale(
       _markToken: PromiseOrValue<string>,
       _rewardToken: PromiseOrValue<string>,
@@ -967,12 +1059,22 @@ export interface Lottery extends BaseContract {
 
     fundReceiver(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    getParticipants(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
     getState(
+      saleId: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getWinners(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;

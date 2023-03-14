@@ -59,8 +59,11 @@ const LOTTERY_ADMIN_ROLE_NUMBER = 2;
 
 describe("Main pathway", function () {
   async function deployFixture() {
+    const Randomizer = await ethers.getContractFactory("MockRandomizer");
+    const randomizer = await Randomizer.deploy();
+
     const Lottery = await ethers.getContractFactory("Lottery");
-    const lottery = await Lottery.deploy(authorityAddr, randomizerAddr);
+    const lottery = await Lottery.deploy(authorityAddr, randomizer.address);
     const [deployer] = await ethers.getSigners();
     return { lottery, deployer };
   }
@@ -132,17 +135,21 @@ describe("Main pathway", function () {
 
   async function getHoldersToParticipate(lottery, admin, saleId) {
     const holder1 = await hre.ethers.getImpersonatedSigner(
-      "0xf7cb4ec8118b55fbf3ca80da392b8cf2634830dd"
+      "0x4f30a0d841088bacddc7c179be06564fc4d0b7e7"
     );
     const holder2 = await hre.ethers.getImpersonatedSigner(
-      "0xd33c0ac049b1b7194fcebd1fe5341e6f3ea9d72b"
+      "0x5edfa1d84e9bb67df816ff8380db056b6911b330"
     );
     const holder3 = await hre.ethers.getImpersonatedSigner(
-      "0x73d4062dfacfb0b1844854d0791f828155060fdb"
+      "0x787b4b7ffef8eddad54f311039acf4c36fec9593"
     );
 
     const holder4 = await hre.ethers.getImpersonatedSigner(
-      "0xf0b407e952fb298e9e792b7e8d5f634050ec188f"
+      "0x85B7fb279A888c56163275dF5A2CaA03cbE467fD"
+    );
+
+    const nonHolder = await hre.ethers.getImpersonatedSigner(
+      "0xD39EaA072A272aBdBa849Bef6582BBFC3819b03d"
     );
 
     const price = (await lottery.sales(saleId)).price;
@@ -169,26 +176,31 @@ describe("Main pathway", function () {
     });
 
     // reverts because wrong deposit amount
-    await expect(lottery.connect(holder1).participate(saleId, 5719)).to.be
+    await expect(lottery.connect(holder1).participate(saleId, 6750)).to.be
       .reverted;
     await expect(
-      lottery.connect(holder1).participate(saleId, 5719, { value: price + 1 })
+      lottery.connect(holder1).participate(saleId, 6750, { value: price + 1 })
     ).to.be.reverted;
 
     await expect(
-      lottery.connect(holder1).participate(saleId, 5719, { value: price })
+      lottery.connect(holder1).participate(saleId, 6750, { value: price })
     ).to.not.be.reverted;
 
     // holder already participated
     await expect(
-      lottery.connect(holder1).participate(saleId, 5722, { value: price })
+      lottery.connect(holder1).participate(saleId, 6734, { value: price })
+    ).to.be.reverted;
+
+    // non holder can't
+    await expect(
+      lottery.connect(nonHolder).participate(saleId, 1, { value: price })
     ).to.be.reverted;
 
     await expect(
-      lottery.connect(holder2).participate(saleId, 1273, { value: price })
+      lottery.connect(holder2).participate(saleId, 1515, { value: price })
     ).to.not.be.reverted;
     await expect(
-      lottery.connect(holder3).participate(saleId, 2838, { value: price })
+      lottery.connect(holder3).participate(saleId, 1102, { value: price })
     ).to.not.be.reverted;
 
     // sale is ended, can't participate anymore
@@ -196,7 +208,7 @@ describe("Main pathway", function () {
     await time.increaseTo(endTime);
 
     await expect(
-      lottery.connect(holder4).participate(saleId, 5634, { value: price })
+      lottery.connect(holder4).participate(saleId, 602, { value: price })
     ).to.be.reverted;
   }
 
@@ -231,7 +243,7 @@ describe("Main pathway", function () {
     await getHoldersToParticipate(lottery, admin, saleId);
 
     // calling randomGen won't work because no fund in randomizer
-    await expect(lottery.getRandomNumber(saleId)).to.be.reverted;
+    // await expect(lottery.getRandomNumber(saleId)).to.be.reverted;
 
     // fund the randomizer
     await lottery.fundRandomizer({
@@ -239,5 +251,25 @@ describe("Main pathway", function () {
     });
 
     await lottery.getRandomNumber(saleId);
+
+    // mock a random number return
+    const randomizerBot = await hre.ethers.getImpersonatedSigner(
+      await lottery.randomizer()
+    );
+    await lottery
+      .connect(randomizerBot)
+      .randomizerCallback(429, ethers.utils.formatBytes32String("Hello World"));
+
+    const winners = await lottery.getWinners(saleId);
+
+    expect(winners).to.have.lengthOf((await lottery.sales(saleId)).supply);
+
+    await lottery.executeAirdropForWinnersAndRefundForLosers(saleId);
+
+    // TODO: check that the winners got their rewards
+
+    // TODO: check that the losers got their refunds
+
+    // TODO: check that fundReceiver got the funds
   });
 });

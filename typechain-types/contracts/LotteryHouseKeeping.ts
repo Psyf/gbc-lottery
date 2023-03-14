@@ -32,6 +32,7 @@ export interface LotteryHouseKeepingInterface extends utils.Interface {
   functions: {
     "authority()": FunctionFragment;
     "changeFundReceiver(address)": FunctionFragment;
+    "changeRandomizerAddr(address)": FunctionFragment;
     "fundRandomizer()": FunctionFragment;
     "fundReceiver()": FunctionFragment;
     "modifyRandomizerCallbackGas(uint256)": FunctionFragment;
@@ -47,6 +48,7 @@ export interface LotteryHouseKeepingInterface extends utils.Interface {
     nameOrSignatureOrTopic:
       | "authority"
       | "changeFundReceiver"
+      | "changeRandomizerAddr"
       | "fundRandomizer"
       | "fundReceiver"
       | "modifyRandomizerCallbackGas"
@@ -61,6 +63,10 @@ export interface LotteryHouseKeepingInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "authority", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "changeFundReceiver",
+    values: [PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "changeRandomizerAddr",
     values: [PromiseOrValue<string>]
   ): string;
   encodeFunctionData(
@@ -100,6 +106,10 @@ export interface LotteryHouseKeepingInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "authority", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "changeFundReceiver",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "changeRandomizerAddr",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -200,6 +210,11 @@ export interface LotteryHouseKeeping extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     fundRandomizer(
       overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
@@ -240,6 +255,11 @@ export interface LotteryHouseKeeping extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  changeRandomizerAddr(
+    newAddr: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   fundRandomizer(
     overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
@@ -277,6 +297,11 @@ export interface LotteryHouseKeeping extends BaseContract {
 
     changeFundReceiver(
       newReceiver: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -339,6 +364,11 @@ export interface LotteryHouseKeeping extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     fundRandomizer(
       overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
@@ -377,6 +407,11 @@ export interface LotteryHouseKeeping extends BaseContract {
 
     changeFundReceiver(
       newReceiver: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    changeRandomizerAddr(
+      newAddr: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

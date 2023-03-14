@@ -16,6 +16,8 @@ export type { LotteryEvents } from "./contracts/LotteryEvents";
 export { LotteryEvents__factory } from "./factories/contracts/LotteryEvents__factory";
 export type { LotteryHouseKeeping } from "./contracts/LotteryHouseKeeping";
 export { LotteryHouseKeeping__factory } from "./factories/contracts/LotteryHouseKeeping__factory";
+export type { MockRandomizer } from "./contracts/tests/MockRandomizer";
+export { MockRandomizer__factory } from "./factories/contracts/tests/MockRandomizer__factory";
 export type { Auth } from "./solmate/src/auth/Auth.sol/Auth";
 export { Auth__factory } from "./factories/solmate/src/auth/Auth.sol/Auth__factory";
 export type { Authority } from "./solmate/src/auth/Auth.sol/Authority";

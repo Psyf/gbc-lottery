@@ -182,6 +182,24 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         }
     }
 
+    /* -------------- Sales getter functions for frontend -------------- */
+
+    function getParticipants(bytes32 saleId)
+        external
+        view
+        returns (address[] memory)
+    {
+        return sales[saleId].participantsArr;
+    }
+
+    function getWinners(bytes32 saleId)
+        external
+        view
+        returns (address[] memory)
+    {
+        return sales[saleId].winners;
+    }
+
     /* -------------- Convenience functions -------------- */
 
     function withdrawMulti(bytes32 saleId, address[] calldata participants)
