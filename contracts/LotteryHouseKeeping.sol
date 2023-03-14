@@ -19,7 +19,7 @@ contract LotteryHouseKeeping is Auth, ReentrancyGuard {
 
     // ----------- House Keeping Functions for Admins ------------ //
 
-    function fundRandomizer() external payable requiresAuth nonReentrant {
+    function fundRandomizer() external payable nonReentrant {
         randomizer.clientDeposit{value: msg.value}(address(this));
     }
 

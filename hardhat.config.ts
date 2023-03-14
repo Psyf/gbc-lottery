@@ -11,7 +11,7 @@ module.exports = {
           hardhat: {
             forking: {
               url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_ARBI}`,
-              blockNumber: 63950946,
+              blockNumber: 69669366,
               enabled: process.env.FORKIT?.toUpperCase() === "TRUE",
             },
           },

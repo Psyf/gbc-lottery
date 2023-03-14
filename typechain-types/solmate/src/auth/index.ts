@@ -3,3 +3,5 @@
 /* eslint-disable */
 import type * as authSol from "./Auth.sol";
 export type { authSol };
+import type * as authorities from "./authorities";
+export type { authorities };

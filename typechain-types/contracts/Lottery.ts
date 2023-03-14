@@ -31,23 +31,25 @@ import type {
 export interface LotteryInterface extends utils.Interface {
   functions: {
     "authority()": FunctionFragment;
+    "changeFundReceiver(address)": FunctionFragment;
     "createSale(address,address,uint256,uint256,uint256,uint256)": FunctionFragment;
     "executeAirdropForWinners(bytes32)": FunctionFragment;
     "executeAirdropForWinnersAndRefundForLosers(bytes32)": FunctionFragment;
     "executeRefundAllOnFailedSale(bytes32)": FunctionFragment;
     "executeRefundForLosers(bytes32)": FunctionFragment;
-    "fundRandomizer(uint256)": FunctionFragment;
+    "fundRandomizer()": FunctionFragment;
+    "fundReceiver()": FunctionFragment;
     "getRandomNumber(bytes32)": FunctionFragment;
     "getState(bytes32)": FunctionFragment;
+    "modifyRandomizerCallbackGas(uint256)": FunctionFragment;
     "owner()": FunctionFragment;
     "participate(bytes32,uint256)": FunctionFragment;
     "randomizer()": FunctionFragment;
     "randomizerCallback(uint256,bytes32)": FunctionFragment;
+    "randomizerCallbackGas()": FunctionFragment;
     "randomizerIdToSalesId(uint256)": FunctionFragment;
-    "reserves()": FunctionFragment;
     "sales(bytes32)": FunctionFragment;
     "setAuthority(address)": FunctionFragment;
-    "sweep(uint256)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "withdraw(bytes32,address)": FunctionFragment;
     "withdrawMulti(bytes32,address[])": FunctionFragment;
@@ -57,23 +59,25 @@ export interface LotteryInterface extends utils.Interface {
   getFunction(
     nameOrSignatureOrTopic:
       | "authority"
+      | "changeFundReceiver"
       | "createSale"
       | "executeAirdropForWinners"
       | "executeAirdropForWinnersAndRefundForLosers"
       | "executeRefundAllOnFailedSale"
       | "executeRefundForLosers"
       | "fundRandomizer"
+      | "fundReceiver"
       | "getRandomNumber"
       | "getState"
+      | "modifyRandomizerCallbackGas"
       | "owner"
       | "participate"
       | "randomizer"
       | "randomizerCallback"
+      | "randomizerCallbackGas"
       | "randomizerIdToSalesId"
-      | "reserves"
       | "sales"
       | "setAuthority"
-      | "sweep"
       | "transferOwnership"
       | "withdraw"
       | "withdrawMulti"
@@ -81,6 +85,10 @@ export interface LotteryInterface extends utils.Interface {
   ): FunctionFragment;
 
   encodeFunctionData(functionFragment: "authority", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "changeFundReceiver",
+    values: [PromiseOrValue<string>]
+  ): string;
   encodeFunctionData(
     functionFragment: "createSale",
     values: [
@@ -110,7 +118,11 @@ export interface LotteryInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "fundRandomizer",
-    values: [PromiseOrValue<BigNumberish>]
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "fundReceiver",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getRandomNumber",
@@ -119,6 +131,10 @@ export interface LotteryInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "getState",
     values: [PromiseOrValue<BytesLike>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "modifyRandomizerCallbackGas",
+    values: [PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
@@ -134,10 +150,13 @@ export interface LotteryInterface extends utils.Interface {
     values: [PromiseOrValue<BigNumberish>, PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
+    functionFragment: "randomizerCallbackGas",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "randomizerIdToSalesId",
     values: [PromiseOrValue<BigNumberish>]
   ): string;
-  encodeFunctionData(functionFragment: "reserves", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "sales",
     values: [PromiseOrValue<BytesLike>]
@@ -145,10 +164,6 @@ export interface LotteryInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "setAuthority",
     values: [PromiseOrValue<string>]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "sweep",
-    values: [PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
@@ -168,6 +183,10 @@ export interface LotteryInterface extends utils.Interface {
   ): string;
 
   decodeFunctionResult(functionFragment: "authority", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "changeFundReceiver",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "createSale", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "executeAirdropForWinners",
@@ -190,10 +209,18 @@ export interface LotteryInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "fundReceiver",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getRandomNumber",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getState", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "modifyRandomizerCallbackGas",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "participate",
@@ -205,16 +232,18 @@ export interface LotteryInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "randomizerCallbackGas",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "randomizerIdToSalesId",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "reserves", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "sales", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setAuthority",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "sweep", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
@@ -336,6 +365,11 @@ export interface Lottery extends BaseContract {
   functions: {
     authority(overrides?: CallOverrides): Promise<[string]>;
 
+    changeFundReceiver(
+      newReceiver: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     createSale(
       _markToken: PromiseOrValue<string>,
       _rewardToken: PromiseOrValue<string>,
@@ -367,9 +401,10 @@ export interface Lottery extends BaseContract {
     ): Promise<ContractTransaction>;
 
     fundRandomizer(
-      amount: PromiseOrValue<BigNumberish>,
       overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
+
+    fundReceiver(overrides?: CallOverrides): Promise<[string]>;
 
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
@@ -380,6 +415,11 @@ export interface Lottery extends BaseContract {
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<[number]>;
+
+    modifyRandomizerCallbackGas(
+      newLimit: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
@@ -397,12 +437,12 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    randomizerCallbackGas(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     randomizerIdToSalesId(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<[string]>;
-
-    reserves(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     sales(
       arg0: PromiseOrValue<BytesLike>,
@@ -432,11 +472,6 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
-    sweep(
-      amount: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
     transferOwnership(
       newOwner: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -461,6 +496,11 @@ export interface Lottery extends BaseContract {
   };
 
   authority(overrides?: CallOverrides): Promise<string>;
+
+  changeFundReceiver(
+    newReceiver: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
 
   createSale(
     _markToken: PromiseOrValue<string>,
@@ -493,9 +533,10 @@ export interface Lottery extends BaseContract {
   ): Promise<ContractTransaction>;
 
   fundRandomizer(
-    amount: PromiseOrValue<BigNumberish>,
     overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
+
+  fundReceiver(overrides?: CallOverrides): Promise<string>;
 
   getRandomNumber(
     saleId: PromiseOrValue<BytesLike>,
@@ -506,6 +547,11 @@ export interface Lottery extends BaseContract {
     saleId: PromiseOrValue<BytesLike>,
     overrides?: CallOverrides
   ): Promise<number>;
+
+  modifyRandomizerCallbackGas(
+    newLimit: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
 
   owner(overrides?: CallOverrides): Promise<string>;
 
@@ -523,12 +569,12 @@ export interface Lottery extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  randomizerCallbackGas(overrides?: CallOverrides): Promise<BigNumber>;
+
   randomizerIdToSalesId(
     arg0: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
   ): Promise<string>;
-
-  reserves(overrides?: CallOverrides): Promise<BigNumber>;
 
   sales(
     arg0: PromiseOrValue<BytesLike>,
@@ -547,11 +593,6 @@ export interface Lottery extends BaseContract {
 
   setAuthority(
     newAuthority: PromiseOrValue<string>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  sweep(
-    amount: PromiseOrValue<BigNumberish>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -579,6 +620,11 @@ export interface Lottery extends BaseContract {
 
   callStatic: {
     authority(overrides?: CallOverrides): Promise<string>;
+
+    changeFundReceiver(
+      newReceiver: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     createSale(
       _markToken: PromiseOrValue<string>,
@@ -610,10 +656,9 @@ export interface Lottery extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    fundRandomizer(
-      amount: PromiseOrValue<BigNumberish>,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    fundRandomizer(overrides?: CallOverrides): Promise<void>;
+
+    fundReceiver(overrides?: CallOverrides): Promise<string>;
 
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
@@ -624,6 +669,11 @@ export interface Lottery extends BaseContract {
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<number>;
+
+    modifyRandomizerCallbackGas(
+      newLimit: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     owner(overrides?: CallOverrides): Promise<string>;
 
@@ -641,12 +691,12 @@ export interface Lottery extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    randomizerCallbackGas(overrides?: CallOverrides): Promise<BigNumber>;
+
     randomizerIdToSalesId(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<string>;
-
-    reserves(overrides?: CallOverrides): Promise<BigNumber>;
 
     sales(
       arg0: PromiseOrValue<BytesLike>,
@@ -673,11 +723,6 @@ export interface Lottery extends BaseContract {
 
     setAuthority(
       newAuthority: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    sweep(
-      amount: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -766,6 +811,11 @@ export interface Lottery extends BaseContract {
   estimateGas: {
     authority(overrides?: CallOverrides): Promise<BigNumber>;
 
+    changeFundReceiver(
+      newReceiver: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     createSale(
       _markToken: PromiseOrValue<string>,
       _rewardToken: PromiseOrValue<string>,
@@ -797,9 +847,10 @@ export interface Lottery extends BaseContract {
     ): Promise<BigNumber>;
 
     fundRandomizer(
-      amount: PromiseOrValue<BigNumberish>,
       overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
+
+    fundReceiver(overrides?: CallOverrides): Promise<BigNumber>;
 
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
@@ -809,6 +860,11 @@ export interface Lottery extends BaseContract {
     getState(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    modifyRandomizerCallbackGas(
+      newLimit: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
@@ -827,12 +883,12 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    randomizerCallbackGas(overrides?: CallOverrides): Promise<BigNumber>;
+
     randomizerIdToSalesId(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    reserves(overrides?: CallOverrides): Promise<BigNumber>;
 
     sales(
       arg0: PromiseOrValue<BytesLike>,
@@ -841,11 +897,6 @@ export interface Lottery extends BaseContract {
 
     setAuthority(
       newAuthority: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    sweep(
-      amount: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -875,6 +926,11 @@ export interface Lottery extends BaseContract {
   populateTransaction: {
     authority(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    changeFundReceiver(
+      newReceiver: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
     createSale(
       _markToken: PromiseOrValue<string>,
       _rewardToken: PromiseOrValue<string>,
@@ -906,9 +962,10 @@ export interface Lottery extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     fundRandomizer(
-      amount: PromiseOrValue<BigNumberish>,
       overrides?: PayableOverrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
+
+    fundReceiver(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getRandomNumber(
       saleId: PromiseOrValue<BytesLike>,
@@ -918,6 +975,11 @@ export interface Lottery extends BaseContract {
     getState(
       saleId: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    modifyRandomizerCallbackGas(
+      newLimit: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -936,12 +998,14 @@ export interface Lottery extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
+    randomizerCallbackGas(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     randomizerIdToSalesId(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    reserves(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     sales(
       arg0: PromiseOrValue<BytesLike>,
@@ -950,11 +1014,6 @@ export interface Lottery extends BaseContract {
 
     setAuthority(
       newAuthority: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    sweep(
-      amount: PromiseOrValue<BigNumberish>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

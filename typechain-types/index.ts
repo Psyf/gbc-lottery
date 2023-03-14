@@ -20,6 +20,8 @@ export type { Auth } from "./solmate/src/auth/Auth.sol/Auth";
 export { Auth__factory } from "./factories/solmate/src/auth/Auth.sol/Auth__factory";
 export type { Authority } from "./solmate/src/auth/Auth.sol/Authority";
 export { Authority__factory } from "./factories/solmate/src/auth/Auth.sol/Authority__factory";
+export type { RolesAuthority } from "./solmate/src/auth/authorities/RolesAuthority";
+export { RolesAuthority__factory } from "./factories/solmate/src/auth/authorities/RolesAuthority__factory";
 export type { ERC721 } from "./solmate/src/tokens/ERC721.sol/ERC721";
 export { ERC721__factory } from "./factories/solmate/src/tokens/ERC721.sol/ERC721__factory";
 export type { ERC721TokenReceiver } from "./solmate/src/tokens/ERC721.sol/ERC721TokenReceiver";
