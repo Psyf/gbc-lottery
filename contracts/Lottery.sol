@@ -126,20 +126,28 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
 
         uint256 randomNumber = uint256(_value);
 
-        // pick a winner from the participants array - i
-        // move the winner to the start of the array
-        for (uint256 i = 0; i < sale.supply; i++) {
-            // Use a cryptographic hash to generate a random index to select a winner from the participants array.
-            uint256 winnerIndex = (uint256(
-                keccak256(abi.encodePacked(randomNumber, i))
-            ) % (sale.participantsArr.length - i)) + i;
-            address winner = sale.participantsArr[winnerIndex];
-            sale.winners.push(winner);
+        if (sale.supply >= sale.participantsArr.length) {
+            // everyone is a winner
+            sale.supply = sale.participantsArr.length;
+            for (uint256 i = 0; i < sale.supply; i++) {
+                sale.winners.push(sale.participantsArr[i]);
+            }
+        } else {
+            // pick a winner from the participants array - i
+            // move the winner to the start of the array
+            for (uint256 i = 0; i < sale.supply; i++) {
+                // Use a cryptographic hash to generate a random index to select a winner from the participants array.
+                uint256 winnerIndex = (uint256(
+                    keccak256(abi.encodePacked(randomNumber, i))
+                ) % (sale.participantsArr.length - i)) + i;
+                address winner = sale.participantsArr[winnerIndex];
+                sale.winners.push(winner);
 
-            // swap the winner to the front of the array
-            address iParticipant = sale.participantsArr[i];
-            sale.participantsArr[i] = winner;
-            sale.participantsArr[winnerIndex] = iParticipant;
+                // swap the winner to the front of the array
+                address iParticipant = sale.participantsArr[i];
+                sale.participantsArr[i] = winner;
+                sale.participantsArr[winnerIndex] = iParticipant;
+            }
         }
 
         reserves += sale.price * sale.supply;
