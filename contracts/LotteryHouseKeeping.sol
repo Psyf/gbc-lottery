@@ -39,6 +39,10 @@ contract LotteryHouseKeeping is Auth, ReentrancyGuard {
         randomizerCallbackGas = newLimit;
     }
 
+    function changeRandomizerAddr(address newAddr) external requiresAuth {
+        randomizer = IRandomizer(newAddr);
+    }
+
     function changeFundReceiver(address newReceiver) external requiresAuth {
         fundReceiver = newReceiver;
     }
