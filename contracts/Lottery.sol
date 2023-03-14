@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import {ERC721} from "solmate/src/tokens/ERC721.sol";
 import {IGBCLab} from "./interfaces/IGBCLab.sol";
-import {Authority} from "solmate/src/auth/Auth.sol";
+import {Authority, RolesAuthority} from "solmate/src/auth/authorities/RolesAuthority.sol";
 import {LotteryEvents} from "./LotteryEvents.sol";
 import {LotteryHouseKeeping} from "./LotteryHouseKeeping.sol";
 import {Sale, State} from "./Sale.sol";
@@ -12,11 +12,9 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
     mapping(bytes32 => Sale) public sales;
     mapping(uint256 => bytes32) public randomizerIdToSalesId;
 
-    constructor(
-        address _owner,
-        Authority _authority,
-        address _randomizerAddress
-    ) LotteryHouseKeeping(_owner, _authority, _randomizerAddress) {}
+    constructor(RolesAuthority police, address _randomizerAddress)
+        LotteryHouseKeeping(police, _randomizerAddress)
+    {}
 
     // function that allows the contract owner to create a new sale with the given parameters
     function createSale(

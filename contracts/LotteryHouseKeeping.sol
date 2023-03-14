@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.17;
 
-import {Auth, Authority} from "solmate/src/auth/Auth.sol";
+import {Auth, RolesAuthority} from "solmate/src/auth/authorities/RolesAuthority.sol";
 import {IRandomizer} from "./interfaces/IRandomizer.sol";
 import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
 
@@ -9,11 +9,9 @@ contract LotteryHouseKeeping is Auth, ReentrancyGuard {
     uint256 public reserves; // stores the amount of ETH the contract holds AND owns
     IRandomizer public randomizer;
 
-    constructor(
-        address _owner,
-        Authority _authority,
-        address _randomizer
-    ) Auth(_owner, _authority) {
+    constructor(RolesAuthority police, address _randomizer)
+        Auth(police.owner(), police)
+    {
         randomizer = IRandomizer(_randomizer);
         reserves = 0;
     }
