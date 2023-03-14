@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "solmate/src/utils/ReentrancyGuard.sol";
 contract LotteryHouseKeeping is Auth, ReentrancyGuard {
     uint256 public reserves; // stores the amount of ETH the contract holds AND owns
     IRandomizer public randomizer;
+    uint256 public randomizerCallbackGas = 100000;
 
     constructor(RolesAuthority police, address _randomizer)
         Auth(police.owner(), police)
@@ -49,5 +50,12 @@ contract LotteryHouseKeeping is Auth, ReentrancyGuard {
     {
         reserves += amount;
         randomizer.clientWithdrawTo(address(this), amount);
+    }
+
+    function modifyRandomizerCallbackGas(uint256 newLimit)
+        external
+        requiresAuth
+    {
+        randomizerCallbackGas = newLimit;
     }
 }

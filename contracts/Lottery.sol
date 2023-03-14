@@ -106,8 +106,7 @@ contract Lottery is LotteryEvents, LotteryHouseKeeping {
         require(getState(saleId) == State.CLOSED, "Sale is not closed.");
         require(sale.randomizerId == 0, "Already requested random nubmer"); // so we can only execute once per sale, else could be drained in an attack
 
-        // todo: need to tweak callback gas limit; set to max?
-        sale.randomizerId = randomizer.request(50000);
+        sale.randomizerId = randomizer.request(randomizerCallbackGas);
         randomizerIdToSalesId[sale.randomizerId] = saleId;
     }
 
